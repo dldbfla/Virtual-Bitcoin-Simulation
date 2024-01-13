@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>가상 비트코인 거래 시뮬레이션</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        input[type="number"],
+        button {
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>가상 비트코인 거래 시뮬레이션</h1>
+
+    <canvas id="bitcoinChart" width="800" height="400"></canvas>
+
+    <p>당신의 가상 포트폴리오를 관리하세요:</p>
+
+    <p>현재 잔액: $<span id="balance">10000</span></p>
+
+    <label for="buyQuantity">매수할 비트코인 수:</label>
+    <input type="number" id="buyQuantity" name="buyQuantity" min="1" value="1">
+    <button onclick="buyBitcoin()">비트코인 매수</button>
+
+    <label for="sellQuantity">매도할 비트코인 수:</label>
+    <input type="number" id="sellQuantity" name="sellQuantity" min="1" value="1">
+    <button onclick="sellBitcoin()">비트코인 매도</button>
+
+    <p>보유 중인 비트코인: <span id="ownedBitcoin">0</span></p>
+    <p>보유 중인 비트코인 가치: $<span id="ownedBitcoinValue">0</span></p>
+
+    <h2>거래 내역</h2>
+    <ul id="transactionHistory">
+        <!-- 거래 내역이 여기에 표시될 것입니다 -->
+    </ul>
+</div>
+
+<script>
+    let bitcoinPrice = 50000; // 초기 비트코인 가격 (가상)
+    let balance = 100000; // 가상 잔액
+    let ownedBitcoin = 0; // 보유 중인 비트코인 수
+    let totalTransactions = []; // 전체 거래 내역
+
+    const bitcoinData = {
+        labels: [],
+        datasets: [{
+            label: 'Bitcoin 가격',
+            data: [], // 동적으로 업데이트될 데이터
+            fill: false,
+            borderColor: [], // 색상을 동적으로 변경할 배열
+            tension: 0.1
+        }]
+    };
+
+    const bitcoinCtx = document.getElementById('bitcoinChart').getContext('2d');
+    const bitcoinChart = new Chart(bitcoinCtx, {
+        type: 'line',
+        data: bitcoinData,
+        options: {}
+    });
+
+    // 그래프 데이터 업데이트
+    function updateGraph() {
+        const newDataPoint = Math.round((Math.random() < 0.5 ? -1 : 1) * Math.random() * 100) + bitcoinPrice;
+
+        const newColor = (newDataPoint < bitcoinPrice) ? 'blue' : 'red'; // 하락 시 파란색, 상승 시 빨간색
+        bitcoinData.datasets[0].borderColor.push(newColor);
+
+        bitcoinPrice = newDataPoint;
+        bitcoinData.labels.push(''); // 시간 라벨은 여기서 업데이트 가능
+        bitcoinData.datasets[0].data.push(newDataPoint);
+
+        // 그래프 업데이트
+        bitcoinChart.update();
+
+        updateOwnedBitcoinValue(); // 보유 중인 비트코인 가치 업데이트
+
+        setTimeout(updateGraph, 2000); // 2초마다 그래프 업데이트
+    }
+
+    // 최초 그래프 업데이트 시작
+    updateGraph();
+
+    function buyBitcoin() {
+        const quantity = parseInt(document.getElementById('buyQuantity').value);
+        const totalPrice = bitcoinPrice * quantity;
+
+        if (totalPrice > balance) {
+            alert('잔액 부족!');
+            return;
+        }
+
+        balance -= totalPrice;
+        ownedBitcoin += quantity;
+        updateBalance();
+        updateOwnedBitcoin();
+        updateOwnedBitcoinValue();
+        updateTransactionHistory(`구매: ${quantity} BTC - $${totalPrice}`);
+
+        alert(quantity + ' 비트코인을 $' + totalPrice + '에 구매하였습니다.');
+    }
+
+    function sellBitcoin() {
+        const quantity = parseInt(document.getElementById('sellQuantity').value);
+        const totalPrice = bitcoinPrice * quantity;
+
+        if (quantity > ownedBitcoin) {
+            alert('보유 중인 비트코인보다 많이 판매할 수 없습니다.');
+            return;
+        }
+
+        balance += totalPrice;
+        ownedBitcoin -= quantity;
+        updateBalance();
+        updateOwnedBitcoin();
+        updateOwnedBitcoinValue();
+        updateTransactionHistory(`판매: ${quantity} BTC + $${totalPrice}`);
+
+        alert(quantity + ' 비트코인을 $' + totalPrice + '에 판매하였습니다.');
+    }
+
+    function updateBalance() {
+        document.getElementById('balance').innerText = balance.toFixed(2);
+    }
+
+    function updateOwnedBitcoin() {
+        document.getElementById('ownedBitcoin').innerText = ownedBitcoin;
+    }
+
+    function updateOwnedBitcoinValue() {
+        const value = ownedBitcoin * bitcoinPrice;
+        document.getElementById('ownedBitcoinValue').innerText = value.toFixed(2);
+    }
+
+    function updateTransactionHistory(transaction) {
+        totalTransactions.push(transaction); // 전체 거래 내역에 추가
+
+        const transactionHistory = document.getElementById('transactionHistory');
+        const listItem = document.createElement('li');
+        listItem.textContent = transaction;
+        transactionHistory.appendChild(listItem);
+    }
+</script>
+
+</body>
+</html>
