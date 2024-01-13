@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Virtual Bitcoin Trading Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        input[type="number"],
+        button {
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Virtual Bitcoin Trading Simulation</h1>
+
+        <canvas id="bitcoinChart" width="800" height="400"></canvas>
+
+        <p>Manage your virtual portfolio:</p>
+
+        <p>Current Balance: $<span id="balance">10000</span></p>
+
+        <label for="buyQuantity">Buy Bitcoin Quantity:</label>
+        <input type="number" id="buyQuantity" name="buyQuantity" min="1" value="1">
+        <button onclick="buyBitcoin()">Buy Bitcoin</button>
+
+        <label for="sellQuantity">Sell Bitcoin Quantity:</label>
+        <input type="number" id="sellQuantity" name="sellQuantity" min="1" value="1">
+        <button onclick="sellBitcoin()">Sell Bitcoin</button>
+
+        <p>Owned Bitcoin: <span id="ownedBitcoin">0</span></p>
+        <p>Owned Bitcoin Value: $<span id="ownedBitcoinValue">0</span></p>
+
+        <h2>Transaction History</h2>
+        <ul id="transactionHistory">
+            <!-- Transaction history will be displayed here -->
+        </ul>
+    </div>
+
+    <script>
+        let bitcoinPrice = 50000; // Initial Bitcoin price (virtual)
+        let balance = 100000; // Virtual balance
+        let ownedBitcoin = 0; // Number of owned Bitcoins
+        let totalTransactions = []; // Overall transaction history
+
+        const bitcoinData = {
+            labels: [],
+            datasets: [{
+                label: 'Bitcoin Price',
+                data: [], // Data to be dynamically updated
+                fill: false,
+                borderColor: [], // Array for dynamically changing colors
+                tension: 0.1
+            }]
+        };
+
+        const bitcoinCtx = document.getElementById('bitcoinChart').getContext('2d');
+        const bitcoinChart = new Chart(bitcoinCtx, {
+            type: 'line',
+            data: bitcoinData,
+            options: {}
+        });
+
+        // Update graph data
+        function updateGraph() {
+            const newDataPoint = Math.round((Math.random() < 0.5 ? -1 : 1) * Math.random() * 100) + bitcoinPrice;
+
+            const newColor = (newDataPoint < bitcoinPrice) ? 'blue' : 'red'; // Blue for decrease, red for increase
+            bitcoinData.datasets[0].borderColor.push(newColor);
+
+            bitcoinPrice = newDataPoint;
+            bitcoinData.labels.push(''); // Time labels can be updated here
+            bitcoinData.datasets[0].data.push(newDataPoint);
+
+            // Update the graph
+            bitcoinChart.update();
+
+            updateOwnedBitcoinValue(); // Update owned Bitcoin value
+
+            setTimeout(updateGraph, 2000); // Update the graph every 2 seconds
+        }
+
+        // Start initial graph update
+        updateGraph();
+
+        function buyBitcoin() {
+            const quantity = parseInt(document.getElementById('buyQuantity').value);
+            const totalPrice = bitcoinPrice * quantity;
+
+            if (totalPrice > balance) {
+                alert('Insufficient balance!');
+                return;
+            }
+
+            balance -= totalPrice;
+            ownedBitcoin += quantity;
+            updateBalance();
+            updateOwnedBitcoin();
+            updateOwnedBitcoinValue();
+            updateTransactionHistory(`Purchase: ${quantity} BTC - $${totalPrice}`);
+
+            alert(quantity + ' Bitcoin(s) purchased for $' + totalPrice + '.');
+        }
+
+        function sellBitcoin() {
+            const quantity = parseInt(document.getElementById('sellQuantity').value);
+            const totalPrice = bitcoinPrice * quantity;
+
+            if (quantity > ownedBitcoin) {
+                alert("Cannot sell more Bitcoins than you own.");
+                return;
+            }
+
+            balance += totalPrice;
+            ownedBitcoin -= quantity;
+            updateBalance();
+            updateOwnedBitcoin();
+            updateOwnedBitcoinValue();
+            updateTransactionHistory(`Sell: ${quantity} BTC + $${totalPrice}`);
+
+            alert(quantity + ' Bitcoin(s) sold for $' + totalPrice + '.');
+        }
+
+        function updateBalance() {
+            document.getElementById('balance').innerText = balance.toFixed(2);
+        }
+
+        function updateOwnedBitcoin() {
+            document.getElementById('ownedBitcoin').innerText = ownedBitcoin;
+        }
+
+        function updateOwnedBitcoinValue() {
+            const value = ownedBitcoin * bitcoinPrice;
+            document.getElementById('ownedBitcoinValue').innerText = value.toFixed(2);
+        }
+
+        function updateTransactionHistory(transaction) {
+            totalTransactions.push(transaction); // Add to overall transaction history
+
+            const transactionHistory = document.getElementById('transactionHistory');
+            const listItem = document.createElement('li');
+            listItem.textContent = transaction;
+            transactionHistory.appendChild(listItem);
+        }
+    </script>
+
+</body>
+
+</html>
